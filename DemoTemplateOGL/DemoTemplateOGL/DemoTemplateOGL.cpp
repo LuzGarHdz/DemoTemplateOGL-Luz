@@ -15,6 +15,7 @@
 #include "Base/model.h"
 #include "Base/Scene.h"
 #include "Scenario.h"
+#include "GameManager.h" // ASTROFLAG
 
 #define MAX_LOADSTRING 100
 #ifdef _WIN32 
@@ -64,10 +65,9 @@ bool showStats = true;
 bool newContext = false; // Bandera para identificar si OpenGL 2.0 > esta activa
 struct GameTime gameTime;
 Camera* Camera::cameraInstance = NULL;
-
 // Objecto de escena y render
 Scene *OGLobj;
-
+GameManager gAstroFlag; // ASTROFLAG manager
 #ifdef _WIN32 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -78,6 +78,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    wcscpy_s(szTitle, L"AstroFlag");
     LoadStringW(hInstance, IDC_DEMOTEMPLATEOGL, szWindowClass, MAX_LOADSTRING);
     // Si no logra activar OpenGL 2 o superior termina el programa
     if (prepareRenderWindow(hInstance, nCmdShow))
@@ -126,10 +127,15 @@ int startGameEngine(void *ptrMsg){
     Texto *coordenadas = NULL;
     try{
         OGLobj = new Scenario(model); // Creamos nuestra escena con esa posicion de inicio
-        translate = glm::vec3(5.0f, OGLobj->getTerreno()->Superficie(5.0, -5.0), -5.0f);
+        translate = glm::vec3(50.0f, OGLobj->getTerreno()->Superficie(50.0, -25.0), -25.0f);
         model->setTranslate(&translate);
         model->setNextTranslate(&translate);
         renderiza = false;
+
+
+        glm::vec3 spawnPoint = translate;
+        // Inicializamos AstroFlag
+        gAstroFlag.init(static_cast<Scenario*>(OGLobj), model, spawnPoint);
 
         int running = 1;
         fps = new Texto((WCHAR*)L"0 fps", 20, 0, 0, 22, 0, model);
@@ -163,6 +169,11 @@ int startGameEngine(void *ptrMsg){
             // ------
             bool checkCollition = checkInput(&actions, OGLobj);
             int cambio = OGLobj->update();
+            gAstroFlag.update(gameTime.deltaTime);
+            if (gAstroFlag.isGameOver()) {
+                swapGLBuffers();
+                break; // Termina el loop
+            }
             Scene *escena = OGLobj->Render();
             if (escena != OGLobj) {
                 delete OGLobj;
@@ -172,6 +183,14 @@ int startGameEngine(void *ptrMsg){
             }
             swapGLBuffers();
         }
+        // ASTROFLAG BEGIN Post-loop
+        if (gAstroFlag.isWin()) {
+            std::cout << "AstroFlag: Juego ganado.\n";
+        }
+        else if (gAstroFlag.isLose()) {
+            std::cout << "AstroFlag: Juego perdido.\n";
+        }
+        // ASTROFLAG END Post-loop
     }catch(...){
     }
     model = OGLobj != NULL ? OGLobj->getMainModel() : model;

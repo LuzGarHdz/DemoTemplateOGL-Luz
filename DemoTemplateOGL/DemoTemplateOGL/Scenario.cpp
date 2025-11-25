@@ -15,6 +15,7 @@ Scenario::Scenario(Camera *cam) {
 	model->setTranslate(&translate);
 	model->setNextTranslate(&translate);
 	InitGraph(model);
+
 }
 Scenario::Scenario(Model *camIni) {
     InitGraph(camIni);
@@ -27,7 +28,7 @@ void Scenario::InitGraph(Model* main) {
 	//creamos el objeto skydome
 	sky = new SkyDome(32, 32, 50, (WCHAR*)L"skydome/earth.jpg", main->cameraDetails);
 	//creamos el terreno
-	terreno = new Terreno((WCHAR*)L"skydome/marte.jpg", (WCHAR*)L"skydome/texterr2.jpg", 400, 400, main->cameraDetails);
+	terreno = new Terreno((WCHAR*)L"skydome/mars.png", (WCHAR*)L"skydome/texterr2.jpg", 400, 400, main->cameraDetails);
 	water = new Water((WCHAR*)L"textures/terreno.bmp", (WCHAR*)L"textures/water.bmp", 20, 20, camara->cameraDetails);
 	glm::vec3 translate;
 	glm::vec3 scale;
@@ -35,7 +36,7 @@ void Scenario::InitGraph(Model* main) {
 	rotation = glm::vec3(1.0f, 0.0f, 0.0f); //rotation X
 	water->setRotX(180);
 	water->setNextRotX(180);
-	translate = glm::vec3(-15.0f, 8.0f, 40.0f);
+	translate = glm::vec3(-7.0f, terreno->Superficie(-7.0f, 4.0f)+0.5, 4.0f);
 	water->setTranslate(&translate);
 	// load models
 	// -----------
@@ -230,7 +231,7 @@ void Scenario::InitGraph(Model* main) {
 	// NAVE ASTRONAUTA
 	Model* nave;
 	nave = new Model("models/nave_astronauta/nave_astro.obj", main->cameraDetails, false, false);
-	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 12, 20.0f);					//7
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 6, 20.0f);					//7
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
 	nave->setTranslate(&translate);
 	nave->setNextTranslate(&translate);
@@ -247,7 +248,7 @@ void Scenario::InitGraph(Model* main) {
 	// HITBOXES PARA LA NAVE (ESTRUCTURA NAVEGABLE)
 	Model* suelo;
 	suelo = new Model("models/hitbox/hitboxsuelo.obj", main->cameraDetails, false, false);
-	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) - 1, 20.0f);					//7
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
 	suelo->setTranslate(&translate);
 	suelo->setNextTranslate(&translate);
@@ -256,7 +257,7 @@ void Scenario::InitGraph(Model* main) {
 
 	Model* pared1;
 	pared1 = new Model("models/hitbox/hitboxpared1.obj", main->cameraDetails, false, false);
-	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 0, 20.0f);					//7
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
 	pared1->setTranslate(&translate);
 	pared1->setNextTranslate(&translate);
@@ -265,7 +266,7 @@ void Scenario::InitGraph(Model* main) {
 	
 	Model* pared2;
 	pared2 = new Model("models/hitbox/hitboxpared2.obj", main->cameraDetails, false, false);
-	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 0, 20.0f);					//7
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
 	pared2->setTranslate(&translate);
 	pared2->setNextTranslate(&translate);
@@ -288,7 +289,7 @@ void Scenario::InitGraph(Model* main) {
 	Model* telescopio;
 	telescopio = new Model("models/telescopio/telescopio.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(-10.0f, terreno->Superficie(0.0f, 0.0f) + 0, 20.0f);						//9
-	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
+	scale = glm::vec3(4.0f, 4.0f, 4.0f);	// it's a bit too big for our scene, so scale it down
 	telescopio->setTranslate(&translate);
 	telescopio->setNextTranslate(&translate);
 	telescopio->setScale(&scale);
@@ -298,8 +299,10 @@ void Scenario::InitGraph(Model* main) {
 	// ROBOT
 	Model* robot;
 	robot = new Model("models/robot/robot.fbx", main->cameraDetails, false, false);
-	translate = glm::vec3(20.0f, terreno->Superficie(18.0f, 11.0f) + 0, 0.0f);						//10
+	translate = glm::vec3(50.0f, terreno->Superficie(50.0f, -17.0f) + 0, -17.0f);						//10
 	scale = glm::vec3(10.0f, 10.0f, 10.0f);	// it's a bit too big for our scene, so scale it down
+	rotation = glm::vec3(0.0f, 1.0f, 0.0f); //rotation Y
+	robot->setNextRotY(180);
 	robot->setTranslate(&translate);
 	robot->setNextTranslate(&translate);
 	robot->setScale(&scale);
