@@ -1,13 +1,37 @@
 #pragma once
 #include <vector>
 #include <string>
-#include <glm/glm.hpp>
-#include "Base/model.h"
-#include "Texto.h"
-#include "Scenario.h"
-#include "InputDevices/KeyboardInput.h" // por cDelta (mouse)
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
+#include <glm/glm.hpp>
+#include <algorithm>
+#include "Scenario.h"
+#include "Texto.h"
+#include "Billboard2D.h"
+#include "InputDevices/KeyboardInput.h"
+
+inline void ShowAlertWindow(const wchar_t* msg) {
+#ifdef _WIN32
+    MessageBoxW(NULL, msg, L"AstroFlag", MB_OK | MB_ICONINFORMATION);
+#else
+    std::wcout << L"[ALERT] " << msg << std::endl;
+#endif
+}
+
+// RADIO DE SPAWN DE ESTRELLAS Y ALIENS
+static constexpr float STAR_MIN_RADIUS = 35.0f;   // Distancia mínima desde el spawn para estrellas
+static constexpr float STAR_MAX_RADIUS = 85.0f;   // Distancia máxima para estrellas
+static constexpr float ALIEN_MIN_RADIUS = 50.0f;   // Distancia mínima para aliens
+static constexpr float ALIEN_MAX_RADIUS = 100.0f;   // Distancia máxima para aliens
+//METEOROS
+static constexpr double METEOR_INTERVAL_MS = 3000.0;   // cada 8 s
+static constexpr double METEOR_DEBUG_FIRST_MS = 3000.0;   // primera lluvia = 3 s
+static constexpr double METEOR_DURATION_MS = 10000.0;   // dura 6 s
+static constexpr int    METEOR_COUNT = 50;
+static constexpr float  METEOR_FALL_SPEED = 18.0f;    // unidades por segundo
+static constexpr float  METEOR_MIN_RADIUS = 35.0f;
+static constexpr float  METEOR_MAX_RADIUS = 85.0f;
 
 struct AstroFlagState {
     enum Phase { Init, Playing, Win, Lose } phase = Init;
@@ -21,24 +45,20 @@ private:
     Scenario* scene = nullptr;
     Model* player = nullptr;
     Model* robot = nullptr;
-    std::vector<Model*> stars;      // estrellas iniciales
-    std::vector<Model*> flags;      // banderas colocadas
-    std::vector<Model*> aliens;     // aliens
+    std::vector<Model*> stars;
+    std::vector<Model*> flags;
+    std::vector<Model*> aliens;
     AstroFlagState state;
-    glm::vec3 spawnPoint{ 5.0f, 0.0f, -5.0f };
+    glm::vec3 spawnPoint{ 50.0f,0.0f,-30.0f };
+    // Meteoritos
     double meteorTimerMs = 0.0;
-    double meteorIntervalMs = 30000.0; // 30 segundos
-    bool meteorActive = false;
     double meteorRainElapsedMs = 0.0;
-    double meteorRainDurationMs = 6000.0;
-    std::vector<Billboard2D*> meteorBillboards;
-    Texto* messageText = nullptr;
+    bool meteorActive = false;
+    std::vector<Billboard*> meteorBillboards;
 
-    // Configuración
-    float alienBaseSpeed = 2.0f; // unidades / segundo
-    float alienChaseRadius = 150.0f;
-    float collisionDistancePlayerAlien = 3.0f;
-    float collisionDistancePlayerStar = 3.0f;
+    Texto* hud = nullptr;
+    std::wstring lastMessage = L"";
+    float alienBaseSpeed = 2.0f;
 
 public:
     void init(Scenario* sce, Model* playerModel, const glm::vec3& spawn) {
@@ -47,114 +67,178 @@ public:
         spawnPoint = spawn;
         std::srand((unsigned)std::time(nullptr));
 
-        // Texto para mensajes (HUD)
-        messageText = new Texto((WCHAR*)L"", 18, 0, 10, 50, 0, player);
-        messageText->name = "GameMessages";
-        scene->getLoadedText()->emplace_back(messageText);
-
-        // Robot (colocado frente al jugador)
-        glm::vec3 robotPos = spawn + glm::vec3(0.0f, 0.0f, 8.0f);
-        robot = new Model("models/robot/robot.fbx", robotPos, player->cameraDetails);
-        robot->setTranslate(&robotPos);
-        scene->getLoadedModels()->emplace_back(robot);
-
-        // Estrellas iniciales
-        for (int i = 0; i < state.totalFlags; ++i) {
-            glm::vec3 pos = randomNear(spawnPoint, 25.0f);
-            pos.y = scene->getTerreno()->Superficie(pos.x, pos.z);
-            Model* star = new Model("models/star/star.fbx", pos, player->cameraDetails);
-            star->setTranslate(&pos);
-            scene->getLoadedModels()->emplace_back(star);
-            stars.emplace_back(star);
+        hud = nullptr;
+        auto textos = scene->getLoadedText();
+        if (textos->size() >= 2) hud = textos->at(1);
+        if (!hud) {
+            hud = new Texto((WCHAR*)L"", 20, 0, 10, 80, 0, player);
+            hud->name = "GameHUD";
+            textos->emplace_back(hud);
         }
 
-        // Aliens
-        const std::string alienModels[3] = {
-            "models/alien/hiphop(1).fbx",
-            "models/alien/breakdance.fbx",
-            "models/alien/Breakdance2.fbx"
-        };
-        for (int i = 0; i < 3; ++i) {
-            glm::vec3 apos = randomNear(spawnPoint, 35.0f);
-            apos.y = scene->getTerreno()->Superficie(apos.x, apos.z);
-            Model* alien = new Model(alienModels[i], apos, player->cameraDetails);
-            alien->setTranslate(&apos);
-            glm::vec3 scale(1.8f);
-            alien->setScale(&scale);
-            scene->getLoadedModels()->emplace_back(alien);
-            aliens.emplace_back(alien);
+        // Robot
+        {
+            glm::vec3 rPos = spawn + glm::vec3(0, 0, 10); // un poco más lejos también
+            rPos.y = scene->getTerreno()->Superficie(rPos.x, rPos.z);
+            robot = new Model("models/robot/robot.obj", player->cameraDetails, false, false);
+            robot->setTranslate(&rPos);
+            robot->setNextTranslate(&rPos);
+            glm::vec3 rScale(10.0f);
+            robot->setScale(&rScale);
+            robot->setNextRotY(180);
+            scene->getLoadedModels()->emplace_back(robot);
         }
+
+
+        // Aliens (anillo más amplio)
+        spawnAliens();
+
+        ShowAlertWindow(L"Acércate y haz click al robot para empezar.");
         updateHUD();
+        std::cout << "[AstroFlag] init\n";
     }
 
     void update(double dtMs) {
         if (!scene || !player) return;
-
         if (state.phase == AstroFlagState::Init) {
-            handleRobotClick();
+            robotClick();
         }
-        if (state.phase == AstroFlagState::Playing) {
-            updateFlags(dtMs);
+        else if (state.phase == AstroFlagState::Playing) {
+            updateFlags();
             updateAliens(dtMs);
             updateMeteors(dtMs);
         }
-        if (state.phase == AstroFlagState::Win) {
-            setMessage(L"¡HAS GANADO! Todas las banderas colocadas.");
-        }
-        if (state.phase == AstroFlagState::Lose) {
-            setMessage(L"Has perdido. Los aliens te atraparon.");
-        }
+        updateHUD();
     }
 
     bool isGameOver() const {
         return state.phase == AstroFlagState::Win || state.phase == AstroFlagState::Lose;
     }
+
+    void triggerMeteorRain() {
+        if (!meteorActive) startRain();
+    }
+
     bool isWin() const { return state.phase == AstroFlagState::Win; }
     bool isLose() const { return state.phase == AstroFlagState::Lose; }
 
+
 private:
-    glm::vec3 randomNear(const glm::vec3& center, float radiusXZ) {
-        float rx = ((std::rand() % 20000) / 10000.f - 1.f) * radiusXZ;
-        float rz = ((std::rand() % 20000) / 10000.f - 1.f) * radiusXZ;
-        return glm::vec3(center.x + rx, center.y, center.z + rz);
+    // Generador en anillo
+    glm::vec3 randomAnnulus(const glm::vec3& center, float minR, float maxR) {
+        float angle = ((std::rand() % 10000) / 10000.f) * glm::pi<float>() * 2.0f;
+        float r = minR + ((std::rand() % 10000) / 10000.f) * (maxR - minR);
+        float x = center.x + r * std::sin(angle);
+        float z = center.z + r * std::cos(angle);
+        return { x, center.y, z };
     }
 
-    void handleRobotClick() {
-        // Simulación de click en robot: si LMB presionado y distancia < 6
-        if (cDelta.getLbtn()) {
-            float d = glm::length(*player->getTranslate() - *robot->getTranslate());
-            if (d < 6.0f) {
-                setMessage(L"Hola Bob! Coloca las banderas siguiendo las estrellas antes de que los aliens te atrapen.");
+    void spawnStars() {
+        for (int i = 0; i < state.totalFlags; i++) {
+            glm::vec3 p = randomAnnulus(spawnPoint, STAR_MIN_RADIUS, STAR_MAX_RADIUS);
+            p.y = scene->getTerreno()->Superficie(p.x, p.z);
+            Model* star = new Model("models/star/star.fbx", player->cameraDetails);
+            star->setTranslate(&p);
+            star->setNextTranslate(&p);
+            stars.emplace_back(star);
+            scene->getLoadedModels()->emplace_back(star);
+        }
+    }
+
+    void spawnAliens() {
+        const char* alienPaths[3] = {
+            "models/alien/hiphop(1).fbx",
+            "models/alien/breakdance.fbx",
+            "models/alien/Breakdance2.fbx"
+        };
+        for (int i = 0; i < 3; i++) {
+            glm::vec3 ap = randomAnnulus(spawnPoint, ALIEN_MIN_RADIUS, ALIEN_MAX_RADIUS);
+            ap.y = scene->getTerreno()->Superficie(ap.x, ap.z);
+            Model* alien = new Model(alienPaths[i], player->cameraDetails);
+            alien->setTranslate(&ap);
+            alien->setNextTranslate(&ap);
+            glm::vec3 sc(0.04f);
+            alien->setScale(&sc);
+            alien->setNextRotY(90);
+            aliens.emplace_back(alien);
+            scene->getLoadedModels()->emplace_back(alien);
+        }
+    }
+
+    void removeCurrentStars() {
+        auto& models = *scene->getLoadedModels();
+        for (auto* star : stars) {
+            if (!star) continue;
+            auto it = std::find(models.begin(), models.end(), star);
+            if (it != models.end()) models.erase(it);
+            delete star;
+        }
+        stars.clear();
+    }
+
+    void removeCurrentAliens() {
+        auto& models = *scene->getLoadedModels();
+        for (auto* alien : aliens) {
+            if (!alien) continue;
+            auto it = std::find(models.begin(), models.end(), alien);
+            if (it != models.end()) models.erase(it);
+            delete alien;
+        }
+        aliens.clear();
+    }
+
+    void robotClick() {
+        if (!robot) return;
+        float d = glm::length(*player->getTranslate() - *robot->getTranslate());
+        if (d < 10.0f) { 
+            if (cDelta.getLbtn()) {
                 state.phase = AstroFlagState::Playing;
+                ShowAlertWindow(L"Hola Bob! Recuerda colocar todas las banderas antes de que los aliens nos atrapen, sigue las estrellas del terreno.");
+                std::cout << "[AstroFlag] playing\n";
+
+                // Estrellas (anillo externo)
+                spawnStars(); 
+
             }
         }
     }
 
-    void updateFlags(double /*dt*/) {
-        // Colisión jugador - estrellas
-        for (size_t i = 0; i < stars.size(); ++i) {
+    void updateFlags() {
+        for (size_t i = 0; i < stars.size(); i++) {
             Model* star = stars[i];
             if (!star) continue;
             float d = glm::length(*player->getTranslate() - *star->getTranslate());
-            if (d < collisionDistancePlayerStar) {
-                // Convertir a bandera
+            if (d < 3.0f) {
                 glm::vec3 pos = *star->getTranslate();
-                // removemos star visual (no la borramos del vector de escena para mantener integridad, solo setActive false)
+                // Eliminar estrella
+                if (!star->getModelAttributes()->empty()) {
+                    Model* AABB = (Model*)star->getModelAttributes()->at(0).hitbox;
+                    if (AABB) delete AABB;
+                    star->getModelAttributes()->at(0).hitbox = NULL;
+                }
                 star->setActive(false);
+                auto& models = *scene->getLoadedModels();
+                auto it = std::find(models.begin(), models.end(), star);
+                if (it != models.end()) models.erase(it);
+                delete star;
                 stars[i] = nullptr;
 
-                Model* flag = new Model("models/flag/flag2.obj", pos, player->cameraDetails);
+                // Crear bandera
+                Model* flag = new Model("models/bandera/flag2.obj", player->cameraDetails, false, false);
                 flag->setTranslate(&pos);
-                glm::vec3 sc(1.5f);
+                flag->setNextTranslate(&pos);
+                glm::vec3 sc(0.5f);
                 flag->setScale(&sc);
                 scene->getLoadedModels()->emplace_back(flag);
                 flags.emplace_back(flag);
 
                 state.flagsPlaced++;
-                setMessage(L"Bandera colocada!");
-                updateHUD();
+                ShowAlertWindow(L"¡Bandera colocada!");
+                std::cout << "[AstroFlag] bandera " << state.flagsPlaced << "\n";
                 if (state.flagsPlaced >= state.totalFlags) {
                     state.phase = AstroFlagState::Win;
+                    ShowAlertWindow(L"¡HAS GANADO! Todas las banderas colocadas.");
+                    std::cout << "[AstroFlag] WIN\n";
                     return;
                 }
             }
@@ -162,46 +246,45 @@ private:
     }
 
     void updateAliens(double dtMs) {
-        float speedMultiplier = 1.0f + 0.15f * state.flagsPlaced;
-        float dtSec = static_cast<float>(dtMs) / 1000.0f;
+        float speedMult = 1.0f + 0.15f * state.flagsPlaced;
+        float dt = (float)dtMs / 1000.f;
         glm::vec3 playerPos = *player->getTranslate();
-
         for (Model* alien : aliens) {
-            if (!alien || !alien->getActive()) continue;
             glm::vec3 pos = *alien->getTranslate();
             glm::vec3 dir = playerPos - pos;
             float dist = glm::length(dir);
-            if (dist < alienChaseRadius && dist > 0.001f) {
-                dir /= dist;
-                pos += dir * alienBaseSpeed * speedMultiplier * dtSec;
-                // Ajustar altura al terreno
-                pos.y = scene->getTerreno()->Superficie(pos.x, pos.z);
-                alien->setTranslate(&pos);
-                alien->setNextTranslate(&pos);
-            }
-            // Colisión
-            if (dist < collisionDistancePlayerAlien) {
+            if (dist > 0.001f) dir /= dist;
+            pos += dir * (alienBaseSpeed * speedMult) * dt;
+            pos.y = scene->getTerreno()->Superficie(pos.x, pos.z);
+            alien->setTranslate(&pos);
+            alien->setNextTranslate(&pos);
+
+            // Rotar alien para mirar al jugador
+            glm::vec3 forward = playerPos - pos;
+            float angDeg = glm::degrees(std::atan2(forward.x, forward.z));
+            alien->setNextRotY(angDeg);
+
+            if (dist < 3.0f) {
                 state.playerHits++;
                 if (state.playerHits >= 3) {
                     state.phase = AstroFlagState::Lose;
+                    ShowAlertWindow(L"Has perdido. Los aliens te atraparon.");
+                    std::cout << "[AstroFlag] LOSE\n";
                     return;
                 }
                 else {
-                    setMessage(L"¡Has recibido daño! Vuelve al inicio.");
-                    // Reset jugador
-                    glm::vec3 resetPos = spawnPoint;
-                    resetPos.y = scene->getTerreno()->Superficie(resetPos.x, resetPos.z);
-                    player->setTranslate(&resetPos);
-                    player->setNextTranslate(&resetPos);
-                    // Reubicar aliens
+                    ShowAlertWindow(L"¡Has recibido daño! Regresando al spawn.");
+                    glm::vec3 reset = spawnPoint;
+                    reset.y = scene->getTerreno()->Superficie(reset.x, reset.z);
+                    player->setTranslate(&reset);
+                    player->setNextTranslate(&reset);
+                    // Reubicar aliens lejos otra vez
                     for (Model* a2 : aliens) {
-                        if (!a2) continue;
-                        glm::vec3 r = randomNear(spawnPoint, 35.0f);
+                        glm::vec3 r = randomAnnulus(spawnPoint, ALIEN_MIN_RADIUS, ALIEN_MAX_RADIUS);
                         r.y = scene->getTerreno()->Superficie(r.x, r.z);
                         a2->setTranslate(&r);
                         a2->setNextTranslate(&r);
                     }
-                    updateHUD();
                 }
                 break;
             }
@@ -209,71 +292,67 @@ private:
     }
 
     void updateMeteors(double dtMs) {
+        if (state.phase != AstroFlagState::Playing) return; // Solo en juego activo
         meteorTimerMs += dtMs;
-        if (!meteorActive && meteorTimerMs >= meteorIntervalMs) {
-            startMeteorRain();
+        if (!meteorActive && meteorTimerMs >= METEOR_INTERVAL_MS) {
+            startRain();
         }
         if (meteorActive) {
+            float dtSec = (float)dtMs / 1000.0f;
             meteorRainElapsedMs += dtMs;
-            // Actualizar caída
             for (auto* b : meteorBillboards) {
                 if (!b) continue;
                 glm::vec3 pos = *b->getTranslate();
-                pos.y -= 0.12f * static_cast<float>(dtMs); // caída proporcional al tiempo (0.12 * ms ~ 72 u/s)
+                pos.y -= METEOR_FALL_SPEED * dtSec;
                 b->setTranslate(&pos);
                 b->setNextTranslate(&pos);
                 if (pos.y < -5.0f) {
                     b->setActive(false);
                 }
             }
-            if (meteorRainElapsedMs >= meteorRainDurationMs) {
-                stopMeteorRain();
+            if (meteorRainElapsedMs >= METEOR_DURATION_MS) {
+                stopRain();
             }
         }
     }
 
-    void startMeteorRain() {
+
+    void startRain() {
         meteorActive = true;
         meteorRainElapsedMs = 0.0;
         meteorBillboards.clear();
-        // Generar lluvia (billboards 2D)
-        for (int i = 0; i < 50; ++i) {
-            glm::vec3 p(
-                spawnPoint.x + ((std::rand() % 20000) / 10000.f - 1.f) * 60.0f,
-                35.0f + (std::rand() % 1000) / 100.0f,
-                spawnPoint.z + ((std::rand() % 20000) / 10000.f - 1.f) * 60.0f
-            );
-            Billboard2D* m = new Billboard2D((WCHAR*)L"textures/meteor.png", 4.0f, 4.0f, p.x, p.y, p.z, player->cameraDetails);
+        for (int i = 0; i < METEOR_COUNT; i++) {
+            glm::vec3 p = randomAnnulus(spawnPoint, METEOR_MIN_RADIUS, METEOR_MAX_RADIUS);
+            p.y = 35.f + (std::rand() % 800) / 40.f;
+            // Usamos Billboard 3D para que se renderice en el mundo
+            Billboard* m = new Billboard((WCHAR*)L"billboards/meteoro.png", 3.f, 3.f, p.x, p.y, p.z, player->cameraDetails);
             meteorBillboards.emplace_back(m);
-            scene->getLoadedBillboards2D()->emplace_back(m);
+            scene->getLoadedBillboards()->emplace_back(m);
         }
-        setMessage(L"Lluvia de meteoritos!");
+        setMessage(L"¡Lluvia de meteoritos!");
+        std::cout << "[AstroFlag] lluvia ON (3D)\n";
     }
 
-    void stopMeteorRain() {
+    void stopRain() {
         meteorActive = false;
         meteorTimerMs = 0.0;
         for (auto* b : meteorBillboards) {
             if (b) b->setActive(false);
         }
         meteorBillboards.clear();
-        setMessage(L"Fin de la lluvia de meteoritos");
+        setMessage(L"Fin de la lluvia de meteoritos.");
+        std::cout << "[AstroFlag] lluvia OFF\n";
     }
 
     void updateHUD() {
-        wchar_t buffer[256];
-        swprintf(buffer, 256, L"Banderas: %d/%d  Vidas: %d/3",
+        if (!hud) return;
+        wchar_t buf[256];
+        swprintf(buf, 256, L"Banderas: %d/%d  Vidas: %d/3",
             state.flagsPlaced, state.totalFlags, 3 - state.playerHits);
-        if (messageText) {
-            messageText->initTexto(buffer);
-        }
+        hud->initTexto(buf);
     }
 
     void setMessage(const wchar_t* msg) {
-        if (!messageText) return;
-        // concatenar estado principal arriba
-        wchar_t base[512];
-        swprintf(base, 512, L"%s", msg);
-        messageText->initTexto(base);
+        lastMessage = msg;
     }
 };

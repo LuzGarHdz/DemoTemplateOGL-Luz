@@ -154,7 +154,9 @@ int startGameEngine(void *ptrMsg){
         double deltasCount = 0;
         double jump = 0;
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        std::cout << "[DEBUG] Inicia loop principal\n";
         while (isProgramRunning(ptrMsg)) {
+            std::cout << "[DEBUG] dt=" << gameTime.deltaTime << "\n";
             deltasCount += gameTime.deltaTime;
             totFrames++;
             if (deltasCount >= 1000.0f){

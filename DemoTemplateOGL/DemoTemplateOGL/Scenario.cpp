@@ -53,6 +53,7 @@ void Scenario::InitGraph(Model* main) {
 	ourModel.emplace_back(alien);
 
 	// ESTRELLA
+	/*
 	Model* star = new Model("models/star/star.fbx", main->cameraDetails);
 	translate = glm::vec3(0.0f, terreno->Superficie(0.0f, 50.0f), 50.0f);
 	star->setNextTranslate(&translate);
@@ -75,7 +76,7 @@ void Scenario::InitGraph(Model* main) {
 	star->setNextTranslate(&m.translate);
 	m.hitbox = star; // Le decimos al ultimo ModelAttribute que tiene un hitbox asignado
 	star->getModelAttributes()->push_back(m);
-
+	*/
 	// ALIEN
 	//Model* alien;
 	//alien = new Model("models/alien/hiphop(1).fbx", main->cameraDetails);
@@ -297,6 +298,7 @@ void Scenario::InitGraph(Model* main) {
 
 
 	// ROBOT
+	/*
 	Model* robot;
 	robot = new Model("models/robot/robot.fbx", main->cameraDetails, false, false);
 	translate = glm::vec3(50.0f, terreno->Superficie(50.0f, -17.0f) + 0, -17.0f);						//10
@@ -307,7 +309,7 @@ void Scenario::InitGraph(Model* main) {
 	robot->setNextTranslate(&translate);
 	robot->setScale(&scale);
 	ourModel.emplace_back(robot);
-
+	*/
 
 	//BANDERA
 	Model* bandera;
@@ -347,7 +349,7 @@ void Scenario::InitGraph(Model* main) {
 	// MONSTRUO
 	Model* monstruo;
 	monstruo = new Model("models/monstruo/monstruo.fbx", main->cameraDetails, false, false);
-	translate = glm::vec3(35.0f, terreno->Superficie(18.0f, 11.0f) + 0, 0.0f);						//14
+	translate = glm::vec3(35.0f, terreno->Superficie(35.0f, 0.0f) + 10, 0.0f);						//14
 	scale = glm::vec3(0.5f, 0.5f, 0.5f);	// it's a bit too big for our scene, so scale it down
 	monstruo->setTranslate(&translate);
 	monstruo->setNextTranslate(&translate);
