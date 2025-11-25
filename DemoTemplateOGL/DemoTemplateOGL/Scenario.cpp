@@ -245,6 +245,8 @@ void Scenario::InitGraph(Model* main) {
 	ourModel.emplace_back(nave);*/
 	delete nave->getModelAttributes()->at(0).hitbox;
 	nave->getModelAttributes()->at(0).hitbox = 0;
+	nave->name = "nave";                 
+
 
 	// HITBOXES PARA LA NAVE (ESTRUCTURA NAVEGABLE)
 	Model* suelo;
@@ -255,6 +257,7 @@ void Scenario::InitGraph(Model* main) {
 	suelo->setNextTranslate(&translate);
 	suelo->setScale(&scale);
 	ourModel.emplace_back(suelo);
+	suelo->name = "sueloNave";
 
 	Model* pared1;
 	pared1 = new Model("models/hitbox/hitboxpared1.obj", main->cameraDetails, false, false);

@@ -47,6 +47,7 @@ private:
     Scenario* scene = nullptr;
     Model* player = nullptr;
     Model* robot = nullptr;
+    Model* medkit = nullptr;
     std::vector<Model*> stars;
     std::vector<Model*> flags;
     std::vector<Model*> aliens;
@@ -56,7 +57,10 @@ private:
     double meteorTimerMs = 0.0;
     double meteorRainElapsedMs = 0.0;
     bool meteorActive = false;
+    bool medkitSpawned = false;
     std::vector<Billboard*> meteorBillboards;
+    float medkitPickupRadius = 3.0f;
+    int maxLives = 3;
 
     Texto* hud = nullptr;
     std::wstring lastMessage = L"";
@@ -91,7 +95,6 @@ public:
             scene->getLoadedModels()->emplace_back(robot);
         }
 
-
         spawnAliens();
 
         ShowAlertWindow(L"Acércate y haz click al robot para empezar.");
@@ -108,6 +111,8 @@ public:
             updateFlags();
             updateAliens(dtMs);
             updateMeteors(dtMs);
+            updateMedkit();
+
         }
         updateHUD();
     }
@@ -216,10 +221,13 @@ private:
             if (cDelta.getLbtn()) {
                 state.phase = AstroFlagState::Playing;
                 ShowAlertWindow(L"Hola Bob! Recuerda colocar todas las banderas antes de que los aliens nos atrapen, sigue las estrellas del terreno.");
-                std::cout << "[AstroFlag] playing\n";
-
+                extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                cDelta.setLbtn(false);
                 // Estrellas al iniciar el juego
                 spawnStars(); 
+                //meddkit
+                spawnMedkit();
 
             }
         }
@@ -256,11 +264,15 @@ private:
 
                 state.flagsPlaced++;
                 ShowAlertWindow(L"¡Bandera colocada!");
-                std::cout << "[AstroFlag] bandera " << state.flagsPlaced << "\n";
+                extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                for (int i = 0; i < 256; ++i) KEYS[i] = false; 
+                cDelta.setLbtn(false);
                 if (state.flagsPlaced >= state.totalFlags) {
                     state.phase = AstroFlagState::Win;
                     ShowAlertWindow(L"¡HAS GANADO! Todas las banderas colocadas.");
-                    std::cout << "[AstroFlag] WIN\n";
+                    extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                    for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                    cDelta.setLbtn(false);
                     return;
                 }
             }
@@ -291,11 +303,16 @@ private:
                 if (state.playerHits >= 3) {
                     state.phase = AstroFlagState::Lose;
                     ShowAlertWindow(L"Has perdido. Los aliens te atraparon.");
-                    std::cout << "[AstroFlag] LOSE\n";
+                    extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                    for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                    cDelta.setLbtn(false);
                     return;
                 }
                 else {
                     ShowAlertWindow(L"¡Has recibido daño! Regresando al spawn.");
+                    extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                    for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                    cDelta.setLbtn(false);
                     glm::vec3 reset = spawnPoint;
                     reset.y = scene->getTerreno()->Superficie(reset.x, reset.z);
                     player->setTranslate(&reset);
@@ -351,7 +368,6 @@ private:
             scene->getLoadedBillboards()->emplace_back(m);
         }
         setMessage(L"¡Lluvia de meteoritos!");
-        std::cout << "[AstroFlag] lluvia ON (3D)\n";
     }
 
     void stopRain() {
@@ -362,7 +378,6 @@ private:
         }
         meteorBillboards.clear();
         setMessage(L"Fin de la lluvia de meteoritos.");
-        std::cout << "[AstroFlag] lluvia OFF\n";
     }
 
     void updateHUD() {
@@ -376,4 +391,72 @@ private:
     void setMessage(const wchar_t* msg) {
         lastMessage = msg;
     }
+
+    // medkit vida 
+    void spawnMedkit() {
+        if (medkitSpawned || !scene) return;
+
+        Model* floor = nullptr;
+        for (Model* m : *scene->getLoadedModels()) {
+            if (m && m->name == "sueloNave") {
+                floor = m;
+                break;
+            }
+        }
+        glm::vec3 estimatedFloorPos;
+        if (!floor) {
+            float baseY = scene->getTerreno()->Superficie(60.0f, 20.0f) - 1.0f;
+            estimatedFloorPos = glm::vec3(60.0f, baseY, 20.0f);
+        }
+
+        glm::vec3 basePos = floor ? *floor->getTranslate() : estimatedFloorPos;
+        basePos.y += 2.0f; 
+        basePos.x += 1.0f;
+        basePos.z += 0.5f;
+
+        // Crear medkit
+        medkit = new Model("models/medkit/medkit.obj", player->cameraDetails, false, false);
+        medkit->name = "Medkit";
+        medkit->setTranslate(&basePos);
+        medkit->setNextTranslate(&basePos);
+        glm::vec3 mkScale(2.0f, 2.0f, 2.0f);
+        medkit->setScale(&mkScale);
+        medkit->setActive(true);
+        scene->getLoadedModels()->emplace_back(medkit);
+        medkitSpawned = true;
+    }
+
+    void removeMedkit() {
+        if (!medkit) return;
+        auto& models = *scene->getLoadedModels();
+        auto it = std::find(models.begin(), models.end(), medkit);
+        if (it != models.end()) models.erase(it);
+        delete medkit;
+        medkit = nullptr;
+        medkitSpawned = false;
+    }
+
+    void updateMedkit() {
+        if (!medkit || !medkit->getActive()) return;
+        glm::vec3 playerPos = *player->getTranslate();
+        glm::vec3 mkPos = *medkit->getTranslate();
+        float dist = glm::length(playerPos - mkPos);
+        if (dist < medkitPickupRadius) {
+            if (state.playerHits > 0) {
+                state.playerHits = std::max(0, state.playerHits - 1);
+                ShowAlertWindow(L"¡Has recogido el botiquín! Vida +1.");
+                extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                cDelta.setLbtn(false);
+            }
+            else {
+                ShowAlertWindow(L"¡Botiquín recogido! Ya estabas a vida completa.");
+                extern bool KEYS[256]; // limpia el estado de teclas para que no se atoren
+                for (int i = 0; i < 256; ++i) KEYS[i] = false;
+                cDelta.setLbtn(false);
+            }
+            removeMedkit();
+        }
+    }
+
 };
