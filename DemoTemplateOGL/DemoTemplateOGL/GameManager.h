@@ -99,7 +99,6 @@ public:
 
         ShowAlertWindow(L"Acércate y haz click al robot para empezar.");
         updateHUD();
-        std::cout << "[AstroFlag] init\n";
     }
 
     void update(double dtMs) {

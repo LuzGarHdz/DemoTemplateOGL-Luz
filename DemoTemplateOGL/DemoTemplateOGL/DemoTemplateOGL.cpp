@@ -67,7 +67,7 @@ struct GameTime gameTime;
 Camera* Camera::cameraInstance = NULL;
 // Objecto de escena y render
 Scene *OGLobj;
-GameManager gAstroFlag; // ASTROFLAG manager
+GameManager gAstroFlag; 
 #ifdef _WIN32 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
