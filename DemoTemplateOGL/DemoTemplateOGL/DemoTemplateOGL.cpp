@@ -111,7 +111,7 @@ int main(int argc, char** argv){
 int startGameEngine(void *ptrMsg){
     // Main character with it's camera
     glm::vec3 translate, scale, v(0, 0, -1);
-    translate = glm::vec3(5.0f, 10.0f, -5.0f);
+    translate = glm::vec3(15.0f, 10.0f, -5.0f);
     //5, ye - 1,-5
     //MainModel *model = new MainModel(hWnd, "models/Cube.obj", translate);
     Camera* camera = Camera::getInstance();
@@ -119,7 +119,7 @@ int startGameEngine(void *ptrMsg){
     model->setTranslate(&translate);
     camera->setFront(v);
     camera->setCharacterHeight(4.0);
-    scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
+    scale = glm::vec3(2.0f, 2.0f, 2.0f);	// it's a bit too big for our scene, so scale it down
     model->setScale(&scale);
     model->setTranslate(&translate);
     Texto *fps = NULL;

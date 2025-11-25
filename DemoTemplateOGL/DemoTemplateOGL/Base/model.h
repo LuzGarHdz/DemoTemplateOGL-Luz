@@ -41,6 +41,7 @@ private:
     bool defaultShader = false;
     glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
+
 public:
     // model data 
     Camera* cameraDetails = NULL;

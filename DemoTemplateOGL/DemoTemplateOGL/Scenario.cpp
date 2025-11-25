@@ -27,7 +27,7 @@ void Scenario::InitGraph(Model* main) {
 	//creamos el objeto skydome
 	sky = new SkyDome(32, 32, 50, (WCHAR*)L"skydome/earth.jpg", main->cameraDetails);
 	//creamos el terreno
-	terreno = new Terreno((WCHAR*)L"skydome/terreno.jpg", (WCHAR*)L"skydome/texterr2.jpg", 400, 400, main->cameraDetails);
+	terreno = new Terreno((WCHAR*)L"skydome/marte.jpg", (WCHAR*)L"skydome/texterr2.jpg", 400, 400, main->cameraDetails);
 	water = new Water((WCHAR*)L"textures/terreno.bmp", (WCHAR*)L"textures/water.bmp", 20, 20, camara->cameraDetails);
 	glm::vec3 translate;
 	glm::vec3 scale;
@@ -42,14 +42,14 @@ void Scenario::InitGraph(Model* main) {
 	ourModel.emplace_back(main);
 
 	//NAVE ALIEN
-	Model* model;
-	model = new Model("models/nave_alien/nave_alien.obj", main->cameraDetails);					//1
+	Model* alien;
+	alien = new Model("models/nave_alien/nave_alien.obj", main->cameraDetails);					//1
 	translate = glm::vec3(2.0f, 20.0f, 10.0f);
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
+	alien->setTranslate(&translate);
+	alien->setNextTranslate(&translate);
 	rotation = glm::vec3(1.0f, 0.0f, 0.0f); //rotation X
-	model->setNextRotX(-30); // 45� rotation
-	ourModel.emplace_back(model);
+	alien->setNextRotX(-30); // 45� rotation
+	ourModel.emplace_back(alien);
 
 	// ESTRELLA
 	Model* star = new Model("models/star/star.fbx", main->cameraDetails);
@@ -61,18 +61,18 @@ void Scenario::InitGraph(Model* main) {
 	m.setTranslate(&translate);
 	m.setNextTranslate(&translate);
 	m.translate.x = 5;
-	model = CollitionBox::GenerateAABB(m.translate, star->AABBsize, main->cameraDetails);		//2
-	model->setTranslate(&m.translate);
-	model->setNextTranslate(&m.translate);
-	m.hitbox = model;
+	star = CollitionBox::GenerateAABB(m.translate, star->AABBsize, main->cameraDetails);		//2
+	star->setTranslate(&m.translate);
+	star->setNextTranslate(&m.translate);
+	m.hitbox = star;
 	star->getModelAttributes()->push_back(m);
 	m.setTranslate(&translate);
 	m.setNextTranslate(&translate);
 	m.translate.x = 10;
-	model = CollitionBox::GenerateAABB(m.translate, star->AABBsize, main->cameraDetails);
-	model->setTranslate(&m.translate);
-	model->setNextTranslate(&m.translate);
-	m.hitbox = model; // Le decimos al ultimo ModelAttribute que tiene un hitbox asignado
+	star = CollitionBox::GenerateAABB(m.translate, star->AABBsize, main->cameraDetails);
+	star->setTranslate(&m.translate);
+	star->setNextTranslate(&m.translate);
+	m.hitbox = star; // Le decimos al ultimo ModelAttribute que tiene un hitbox asignado
 	star->getModelAttributes()->push_back(m);
 
 	// ALIEN
@@ -104,70 +104,68 @@ void Scenario::InitGraph(Model* main) {
 	carrito->setNextRotX(-10);
 	carrito->setScale(&scale);
 	ourModel.emplace_back(carrito);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
 
 
 
-	model = new Model("models/alien/hiphop(1).fbx", main->cameraDetails);
+	Model* alienhip;
+	alienhip = new Model("models/alien/hiphop(1).fbx", main->cameraDetails);
 	translate = glm::vec3(0.0f, terreno->Superficie(0.0f, 60.0f), 60.0f);						//4
 	scale = glm::vec3(0.0005f, 0.0005f, 0.0005f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	model->setNextRotY(90);
-	ourModel.emplace_back(model);
+	alienhip->setTranslate(&translate);
+	alienhip->setNextTranslate(&translate);
+	alienhip->setScale(&scale);
+	alienhip->setNextRotY(90);
+	ourModel.emplace_back(alienhip);
 	try {
-		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/hiphop(1).fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
-		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/hiphop(1).fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
+		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/hiphop(1).fbx", alienhip->GetBoneInfoMap(), alienhip->getBonesInfo(), alienhip->GetBoneCount());
+		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/hiphop(1).fbx", alienhip->GetBoneInfoMap(), alienhip->getBonesInfo(), alienhip->GetBoneCount());
 		std::move(animation.begin(), animation.end(), std::back_inserter(animations));
 		for (Animation animation : animations)
-			model->setAnimator(Animator(animation));
-		model->setAnimation(1);
+			alienhip->setAnimator(Animator(animation));
+		alienhip->setAnimation(1);
 	}
 	catch (...) {
 		ERRORL("Could not load animation!", "ANIMACION");
 	}
 
-	model = new Model("models/alien/breakdance.fbx", main->cameraDetails);						//5
+
+	Model* alienb;
+	alienb = new Model("models/alien/breakdance.fbx", main->cameraDetails);						//5
 	translate = glm::vec3(10.0f, terreno->Superficie(10.0f, 60.0f), 60.0f);
 	scale = glm::vec3(0.0005f, 0.0005f, 0.0005f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	model->setNextRotY(90);
-	ourModel.emplace_back(model);
+	alienb->setTranslate(&translate);
+	alienb->setNextTranslate(&translate);
+	alienb->setScale(&scale);
+	alienb->setNextRotY(90);
+	ourModel.emplace_back(alienb);
 	try {
-		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/breakdance.fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
-		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/breakdance.fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
+		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/breakdance.fbx", alienb->GetBoneInfoMap(), alienb->getBonesInfo(), alienb->GetBoneCount());
+		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/breakdance.fbx", alienb->GetBoneInfoMap(), alienb->getBonesInfo(), alienb->GetBoneCount());
 		std::move(animation.begin(), animation.end(), std::back_inserter(animations));
 		for (Animation animation : animations)
-			model->setAnimator(Animator(animation));
-		model->setAnimation(1);
+			alienb->setAnimator(Animator(animation));
+		alienb->setAnimation(1);
 	}
 	catch (...) {
 		ERRORL("Could not load animation!", "ANIMACION");
 	}
 
-
-	model = new Model("models/alien/Breakdance2.fbx", main->cameraDetails);
+	Model* alienb2;
+	alienb2 = new Model("models/alien/Breakdance2.fbx", main->cameraDetails);
 	translate = glm::vec3(20.0f, terreno->Superficie(20.0f, 60.0f) + 2, 60.0f);						//6
 	scale = glm::vec3(0.0005f, 0.0005f, 0.0005f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	model->setNextRotY(90);
-	ourModel.emplace_back(model);
+	alienb2->setTranslate(&translate);
+	alienb2->setNextTranslate(&translate);
+	alienb2->setScale(&scale);
+	alienb2->setNextRotY(90);
+	ourModel.emplace_back(alienb2);
 	try {
-		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/breakdance2.fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
-		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/breakdance2.fbx", model->GetBoneInfoMap(), model->getBonesInfo(), model->GetBoneCount());
+		std::vector<Animation> animations = Animation::loadAllAnimations("models/alien/breakdance2.fbx", alienb2->GetBoneInfoMap(), alienb2->getBonesInfo(), alienb2->GetBoneCount());
+		std::vector<Animation> animation = Animation::loadAllAnimations("models/alien/breakdance2.fbx", alienb2->GetBoneInfoMap(), alienb2->getBonesInfo(), alienb2->GetBoneCount());
 		std::move(animation.begin(), animation.end(), std::back_inserter(animations));
 		for (Animation animation : animations)
-			model->setAnimator(Animator(animation));
-		model->setAnimation(1);
+			alienb2->setAnimator(Animator(animation));
+		alienb2->setAnimation(1);
 	}
 	catch (...) {
 		ERRORL("Could not load animation!", "ANIMACION");
@@ -228,170 +226,163 @@ void Scenario::InitGraph(Model* main) {
 //	model->setTranslate(&translate);
 //	ourModel.emplace_back(model);
 
+
 	// NAVE ASTRONAUTA
-	model = new Model("models/nave_astronauta/nave_astro.obj", main->cameraDetails, false, false);
-	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 10, 20.0f);					//7
+	Model* nave;
+	nave = new Model("models/nave_astronauta/nave_astro.obj", main->cameraDetails, false, false);
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 12, 20.0f);					//7
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
+	nave->setTranslate(&translate);
+	nave->setNextTranslate(&translate);
+	nave->setScale(&scale);
+	ourModel.emplace_back(nave);
+	/*nave = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
 	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	nave->setNextTranslate(nave->getTranslate());
+	nave->setScale(&scale);
+	ourModel.emplace_back(nave);*/
+	delete nave->getModelAttributes()->at(0).hitbox;
+	nave->getModelAttributes()->at(0).hitbox = 0;
 
-	//PARA QUITAR LAS COLISIONES DE LA NAVE//
+	// HITBOXES PARA LA NAVE (ESTRUCTURA NAVEGABLE)
+	Model* suelo;
+	suelo = new Model("models/hitbox/hitboxsuelo.obj", main->cameraDetails, false, false);
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
+	suelo->setTranslate(&translate);
+	suelo->setNextTranslate(&translate);
+	suelo->setScale(&scale);
+	ourModel.emplace_back(suelo);
 
-
-	delete model->getModelAttributes()->at(0).hitbox;
-	model->getModelAttributes()->at(0).hitbox = NULL;
-
-
-	//FOINAL DE QUITAR NAVE
+	Model* pared1;
+	pared1 = new Model("models/hitbox/hitboxpared1.obj", main->cameraDetails, false, false);
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
+	pared1->setTranslate(&translate);
+	pared1->setNextTranslate(&translate);
+	pared1->setScale(&scale);
+	ourModel.emplace_back(pared1);
+	
+	Model* pared2;
+	pared2 = new Model("models/hitbox/hitboxpared2.obj", main->cameraDetails, false, false);
+	translate = glm::vec3(60.0f, terreno->Superficie(60.0f, 20.0f) + 5, 20.0f);					//7
+	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
+	pared2->setTranslate(&translate);
+	pared2->setNextTranslate(&translate);
+	pared2->setScale(&scale);
+	ourModel.emplace_back(pared2);
+	
 
 	// METEOROOOOOOO(rip)
-	model = new Model("models/meteoro/meteoro.obj", main->cameraDetails, false, false);
+	Model* meteoro;
+	meteoro = new Model("models/meteoro/meteoro.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(50.0f, terreno->Superficie(40.0f, 10.0f) + 2, 20.0f);						//8
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	meteoro->setTranslate(&translate);
+	meteoro->setNextTranslate(&translate);
+	meteoro->setScale(&scale);
+	ourModel.emplace_back(meteoro);
+
 
 	// telescopio
-	model = new Model("models/telescopio/telescopio.obj", main->cameraDetails, false, false);
+	Model* telescopio;
+	telescopio = new Model("models/telescopio/telescopio.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(-10.0f, terreno->Superficie(0.0f, 0.0f) + 0, 20.0f);						//9
 	scale = glm::vec3(3.0f, 3.0f, 3.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	telescopio->setTranslate(&translate);
+	telescopio->setNextTranslate(&translate);
+	telescopio->setScale(&scale);
+	ourModel.emplace_back(telescopio);
+
 
 	// ROBOT
-	model = new Model("models/robot/robot.fbx", main->cameraDetails, false, false);
+	Model* robot;
+	robot = new Model("models/robot/robot.fbx", main->cameraDetails, false, false);
 	translate = glm::vec3(20.0f, terreno->Superficie(18.0f, 11.0f) + 0, 0.0f);						//10
 	scale = glm::vec3(10.0f, 10.0f, 10.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	robot->setTranslate(&translate);
+	robot->setNextTranslate(&translate);
+	robot->setScale(&scale);
+	ourModel.emplace_back(robot);
+
 
 	//BANDERA
-	model = new Model("models/bandera/flag2.obj", main->cameraDetails, false, false);
+	Model* bandera;
+	bandera = new Model("models/bandera/flag2.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(20.0f, terreno->Superficie(5.0f, 10.0f) + 2, 10.0f);						//11
 	scale = glm::vec3(0.5f, 0.5f, 0.5f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
+	bandera->setTranslate(&translate);
+	bandera->setNextTranslate(&translate);
 	rotation = glm::vec3(0.0f, 1.0f, 0.0f); //rotation Y
-	model->getNextRotY(); // 45� rotation
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	bandera->getNextRotY(); // 45� rotation
+	bandera->setScale(&scale);
+	ourModel.emplace_back(bandera);
+
 
 	// PLANTA ALIEN
-	model = new Model("models/planta/planta.obj", main->cameraDetails, false, false);
+	Model* planta;
+	planta = new Model("models/planta/planta.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(25.0f, terreno->Superficie(18.0f, 11.0f) + 0, 0.0f);						//12
 	scale = glm::vec3(5.0f, 5.0f, 5.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	planta->setTranslate(&translate);
+	planta->setNextTranslate(&translate);
+	planta->setScale(&scale);
+	ourModel.emplace_back(planta);
+
 
 	// LUNA
-	model = new Model("models/luna/luna.obj", main->cameraDetails, false, false);
+	Model* luna;
+	luna = new Model("models/luna/luna.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(50.0f, terreno->Superficie(50.0f, 0.0f) + 60, 0.0f);						//13
 	scale = glm::vec3(0.7f, 0.7f, 0.7f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	luna->setTranslate(&translate);
+	luna->setNextTranslate(&translate);
+	luna->setScale(&scale);
+	ourModel.emplace_back(luna);
+
 
 	// MONSTRUO
-	model = new Model("models/monstruo/monstruo.fbx", main->cameraDetails, false, false);
+	Model* monstruo;
+	monstruo = new Model("models/monstruo/monstruo.fbx", main->cameraDetails, false, false);
 	translate = glm::vec3(35.0f, terreno->Superficie(18.0f, 11.0f) + 0, 0.0f);						//14
 	scale = glm::vec3(0.5f, 0.5f, 0.5f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	monstruo->setTranslate(&translate);
+	monstruo->setNextTranslate(&translate);
+	monstruo->setScale(&scale);
+	ourModel.emplace_back(monstruo);
+
 
 	// SATURNO
-	model = new Model("models/saturno/saturno.obj", main->cameraDetails, false, false);
+	Model* saturno;
+	saturno = new Model("models/saturno/saturno.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(-40.0f, terreno->Superficie(40.0f, 0.0f) + 50, 0.0f);						//15
 	scale = glm::vec3(5.0f, 5.0f, 5.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	saturno->setTranslate(&translate);
+	saturno->setNextTranslate(&translate);
+	saturno->setScale(&scale);
+	ourModel.emplace_back(saturno);
+
 
 	// JUPITER
-	model = new Model("models/jupiter/jupiter.obj", main->cameraDetails, false, false);
+	Model* jupiter;
+	jupiter = new Model("models/jupiter/jupiter.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(45.0f, terreno->Superficie(45.0f, 0.0f) + 50, 0.0f);						//16
 	scale = glm::vec3(7.0f, 7.0f, 7.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	jupiter->setTranslate(&translate);
+	jupiter->setNextTranslate(&translate);
+	jupiter->setScale(&scale);
+	ourModel.emplace_back(jupiter);
 
 	// TIERRA
-	model = new Model("models/tierra/tierra.obj", main->cameraDetails, false, false);
+	Model* tierra;
+	tierra = new Model("models/tierra/tierra.obj", main->cameraDetails, false, false);
 	translate = glm::vec3(50.0f, terreno->Superficie(50.0f, 0.0f) + 50, 0.0f);						//17 + prota = 18 modelos
 	scale = glm::vec3(4.0f, 4.0f, 4.0f);	// it's a bit too big for our scene, so scale it down
-	model->setTranslate(&translate);
-	model->setNextTranslate(&translate);
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
-	model = new CollitionBox(60.0f, 15.0f, 10.0f, 10, 10, 10, main->cameraDetails);
-	scale = glm::vec3(1.0f, 1.0f, 1.0f);	// it's a bit too big for our scene, so scale it down
-	model->setNextTranslate(model->getTranslate());
-	model->setScale(&scale);
-	ourModel.emplace_back(model);
+	tierra->setTranslate(&translate);
+	tierra->setNextTranslate(&translate);
+	tierra->setScale(&scale);
+	ourModel.emplace_back(tierra);
+
 
 	inicializaBillboards();
 	std::wstring prueba(L"Coloca todas las banderas!");
