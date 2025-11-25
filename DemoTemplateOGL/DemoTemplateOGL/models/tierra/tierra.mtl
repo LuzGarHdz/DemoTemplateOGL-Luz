@@ -1,0 +1,13 @@
+# Blender 4.2.0 MTL File: 'None'
+# www.blender.org
+
+newmtl Earth.002
+Ns 224.999985
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd 2k_earth_with_clouds.jpg
+map_Ks D:/Downloads/uploads_files_2508069_Planets_Obj_Mtl_Textures/Erath/2k_earth_specular_map.tif
+map_Bump -bm 10.000000 D:/Downloads/uploads_files_2508069_Planets_Obj_Mtl_Textures/Erath/2k_earth_normal_map.tif
