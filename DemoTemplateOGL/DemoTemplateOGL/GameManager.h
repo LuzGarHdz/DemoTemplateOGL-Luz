@@ -10,13 +10,15 @@
 #include "Texto.h"
 #include "Billboard2D.h"
 #include "InputDevices/KeyboardInput.h"
+#include "D:\Documents\POO\PIA\FullDemoTemplateOGL-master\DemoTemplateOGL\DemoTemplateOGL\Base\Animator.h"
+#include "D:\Documents\POO\PIA\FullDemoTemplateOGL-master\DemoTemplateOGL\DemoTemplateOGL\Base\Animation.h"
 
 inline void ShowAlertWindow(const wchar_t* msg) {
 #ifdef _WIN32
     MessageBoxW(NULL, msg, L"AstroFlag", MB_OK | MB_ICONINFORMATION);
 #else
     std::wcout << L"[ALERT] " << msg << std::endl;
-#endif
+#endif 
 }
 
 // RADIO DE SPAWN DE ESTRELLAS Y ALIENS
@@ -78,7 +80,7 @@ public:
 
         // Robot
         {
-            glm::vec3 rPos = spawn + glm::vec3(0, 0, 10); // un poco más lejos también
+            glm::vec3 rPos = spawn + glm::vec3(0, 0, 10); 
             rPos.y = scene->getTerreno()->Superficie(rPos.x, rPos.z);
             robot = new Model("models/robot/robot.obj", player->cameraDetails, false, false);
             robot->setTranslate(&rPos);
@@ -90,7 +92,6 @@ public:
         }
 
 
-        // Aliens (anillo más amplio)
         spawnAliens();
 
         ShowAlertWindow(L"Acércate y haz click al robot para empezar.");
@@ -124,7 +125,6 @@ public:
 
 
 private:
-    // Generador en anillo
     glm::vec3 randomAnnulus(const glm::vec3& center, float minR, float maxR) {
         float angle = ((std::rand() % 10000) / 10000.f) * glm::pi<float>() * 2.0f;
         float r = minR + ((std::rand() % 10000) / 10000.f) * (maxR - minR);
@@ -146,20 +146,42 @@ private:
     }
 
     void spawnAliens() {
-        const char* alienPaths[3] = {
-            "models/alien/hiphop(1).fbx",
-            "models/alien/breakdance.fbx",
-            "models/alien/Breakdance2.fbx"
-        };
-        for (int i = 0; i < 3; i++) {
+        const char* walkPath = "models/alien/Walking.fbx"; 
+        const int numAliens = 3;
+
+        for (int i = 0; i < numAliens; i++) {
             glm::vec3 ap = randomAnnulus(spawnPoint, ALIEN_MIN_RADIUS, ALIEN_MAX_RADIUS);
-            ap.y = scene->getTerreno()->Superficie(ap.x, ap.z);
-            Model* alien = new Model(alienPaths[i], player->cameraDetails);
+            ap.y = scene->getTerreno()->Superficie(ap.x, ap.z) + 1.5f;
+
+            Model* alien = new Model(walkPath, player->cameraDetails);
             alien->setTranslate(&ap);
             alien->setNextTranslate(&ap);
-            glm::vec3 sc(0.04f);
+
+            glm::vec3 sc(0.0005); 
             alien->setScale(&sc);
-            alien->setNextRotY(90);
+            glm::vec3 forward = *player->getTranslate() - ap;
+            float angDeg = glm::degrees(std::atan2(forward.x, forward.z));
+            alien->setRotY(angDeg);
+            alien->setNextRotY(angDeg);
+
+            try {
+                std::vector<Animation> animations =
+                    Animation::loadAllAnimations(walkPath,
+                        alien->GetBoneInfoMap(),
+                        alien->getBonesInfo(),
+                        alien->GetBoneCount());
+
+                for (Animation& clip : animations) {
+                    alien->setAnimator(Animator(clip));
+                }
+
+                alien->setAnimation(0);
+            }
+            catch (...) {
+                ERRORL("No se pudo cargar la animación de Walking.fbx", "ANIMACION");
+            }
+
+            alien->setActive(true);
             aliens.emplace_back(alien);
             scene->getLoadedModels()->emplace_back(alien);
         }
@@ -196,7 +218,7 @@ private:
                 ShowAlertWindow(L"Hola Bob! Recuerda colocar todas las banderas antes de que los aliens nos atrapen, sigue las estrellas del terreno.");
                 std::cout << "[AstroFlag] playing\n";
 
-                // Estrellas (anillo externo)
+                // Estrellas al iniciar el juego
                 spawnStars(); 
 
             }
@@ -324,7 +346,6 @@ private:
         for (int i = 0; i < METEOR_COUNT; i++) {
             glm::vec3 p = randomAnnulus(spawnPoint, METEOR_MIN_RADIUS, METEOR_MAX_RADIUS);
             p.y = 35.f + (std::rand() % 800) / 40.f;
-            // Usamos Billboard 3D para que se renderice en el mundo
             Billboard* m = new Billboard((WCHAR*)L"billboards/meteoro.png", 3.f, 3.f, p.x, p.y, p.z, player->cameraDetails);
             meteorBillboards.emplace_back(m);
             scene->getLoadedBillboards()->emplace_back(m);
